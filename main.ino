@@ -27,7 +27,26 @@ void setup() {
 
 void loop() {
   valorADC = 20*log(analogRead(pinJack) + 1);//Leemos el valor del puerto analógico y lo convertimos a escala logaritmica
-  valorActual = map(valorADC, 0, 60, 0, numero_led-2);//El valor máximo de valorADC es 60, que corresponde al valor 1000 de lectura del pinJack
+  valorActual = map(valorADC, 0, 81, 0, numero_led);//El valor máximo de valorADC es 60, que corresponde al valor 1000 de lectura del pinJack
+
+  ///-------Si el valor actual leido por el puerto ADC es mayor que el últimao valorPico 
+  if(valorActual >= valorPico){
+    valorPico = valorActual;//Actualizamos la variable valorPico con el nuevo pico
+    tiempoPico = millis();//Tomamos el momento en el que se actualizó el nuevo LED pico
+    cayendo = false;//bajamos la bandera de que  está cayendo porque estamos subiendo
+  }
+  ////---Siempre el led pico sea mayor que cero lo tendremos encendido ----////
+  if(valorPico>=0){
+    if(valorPicoAnterior<valorActual){//si el valor pico anterior es menor que el valor leido actualmente por el ADC, tendremos que devolver ese LED al color que le corresponde
+      if(valorPicoAnterior<10) tira_LED.setPixelColor(valorPicoAnterior, tira_LED.Color(0,BRILLO, 0));
+      else if(valorPicoAnterior<20) tira_LED.setPixelColor(valorPicoAnterior, tira_LED.Color(BRILLO,BRILLO, 0));
+      else tira_LED.setPixelColor(valorPicoAnterior, tira_LED.Color(BRILLO,0, 0));
+    }
+    else tira_LED.setPixelColor(valorPicoAnterior, tira_LED.Color(0, 0, 0));//Si el valor pico anterior es mayor o igual que el valor actual leido por el ADC, apagaremos el pico anterior porque habrá un pico nuevo
+    tira_LED.setPixelColor(valorPico, tira_LED.Color(0, 0, BRILLO));
+  }
+  //---Si el led pico es menor a 0, lo tendremos apagado----////
+  else tira_LED.setPixelColor(valorPico, tira_LED.Color(0, 0, 0));
 
   ///---Si el valor actual leido del puerto analógico es mayor que el anterior, tendremos que encender los LED´s que faltan por encender---//
   if(valorActual>valorAnterior){
@@ -39,34 +58,22 @@ void loop() {
   }
   ///---Si el valor actual leido del puerto analógico es menor que el anterior, tendremos que apagar los LED´s que sobren----////
   else{
-    for(int i=valorAnterior; i>valorActual; i--){
+    for(int i=valorAnterior; i>=valorActual; i--){
       tira_LED.setPixelColor(i, tira_LED.Color(0,0,0));
     }
   }
 
-  ///-------Si el valor actual leido por el puerto ADC es mayor que el últimao valorPico 
-  if(valorActual >= valorPico){
-    valorPico = valorActual;//Actualizamos la variable valorPico con el nuevo pico
-    tiempoPico = millis();//Tomamos el momento en el que se actualizó el nuevo LED pico
-    cayendo = false;//bajamos la bandera de que  está cayendo porque estamos subiendo
-  }
-  ////---Siempre el led pico sea mayor que cero lo tendremos encendido ----////
-  if(valorPico>0){
-    tira_LED.setPixelColor(valorPicoAnterior, tira_LED.Color(0, 0, 0));
-    tira_LED.setPixelColor(valorPico, tira_LED.Color(0, 0, BRILLO));
-  }
-  //---Si el led pico es menor o igual a 0, lo tendremos apagado----////
-  else tira_LED.setPixelColor(valorPico, tira_LED.Color(0, 0, 0));
+
   
   //--VAMOS AHORA CON EL TIEMPO QUE VA A ESTAR CAYENDO EL LED PICO---///
   if(!cayendo){//Si no está cayendo el LED
-    if(millis() - tiempoPico >= 1000){///Si han pasado 50 ms desde que se encendió el nuevo LED
+    if(millis() - tiempoPico >= 300){///Si han pasado 500 ms desde que se encendió el nuevo LED
       tiempoCaida = millis();//Guardamos el tiempo en el que ha empezado a caer el LED
       cayendo = true;//Levantamos la bandera de que esta cayendo
     }
   }
   else{// Si sí está cayendo el LED
-    if(millis() - tiempoCaida >= 100){//Si han pasado 10 ms
+    if(millis() - tiempoCaida >= 100){//Si han pasado 100 ms
       valorPicoAnterior = valorPico;
       tiempoCaida = millis();//Guardamos el instante de tiempo en el que sigue decrementamos el valorPico 
       valorPico--;//Decrementamos el valor pico
